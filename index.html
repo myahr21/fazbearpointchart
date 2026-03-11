@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!-- iOS PWA essentials -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Prize Corner">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a0528">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png">
+<title>Freddy's Prize Corner</title>
+<link href="https://fonts.googleapis.com/css2?family=Creepster&family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --purple: #2a0a3d;
+    --deep-purple: #1a0528;
+    --gold: #f5c542;
+    --gold-dark: #c49a1a;
+    --red: #c0392b;
+    --teal: #00b8a0;
+    --teal-dark: #008f7c;
+    --white: #f0e6ff;
+    --gray: #4a3060;
+    /* Safe area insets for iPhone notch/Dynamic Island */
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html { height: 100%; }
+
+  body {
+    background-color: var(--deep-purple);
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(90,20,120,0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(180,20,20,0.2) 0%, transparent 50%),
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    font-family: 'Nunito', sans-serif;
+    color: var(--white);
+    min-height: 100%;
+    /* Respect safe areas */
+    padding: calc(var(--sat) + 12px) calc(var(--sar) + 16px) calc(var(--sab) + 20px) calc(var(--sal) + 16px);
+    overscroll-behavior: none;
+  }
+
+  .scanlines {
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+    pointer-events: none; z-index: 100;
+  }
+
+  .container { max-width: 600px; margin: 0 auto; }
+
+  /* ===== INSTALL BANNER ===== */
+  .install-banner {
+    display: none;
+    background: linear-gradient(135deg, #2a0a3d, #1a0528);
+    border: 1.5px solid var(--gold-dark);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    gap: 12px;
+    align-items: center;
+  }
+  .install-banner.show { display: flex; }
+  .install-banner-text { flex: 1; font-size: 0.82rem; line-height: 1.4; color: rgba(240,230,255,0.8); }
+  .install-banner-text strong { font-family: 'Fredoka One', cursive; color: var(--gold); display: block; margin-bottom: 2px; }
+  .install-banner-close { background: transparent; border: none; color: rgba(240,230,255,0.4); font-size: 1.2rem; cursor: pointer; padding: 4px; }
+
+  /* ===== HEADER ===== */
+  .header { text-align: center; padding: 20px 16px 16px; position: relative; }
+  .eye-left, .eye-right {
+    position: absolute; top: 8px; width: 14px; height: 14px;
+    background: var(--gold); border-radius: 50%;
+    box-shadow: 0 0 15px var(--gold), 0 0 30px rgba(245,197,66,0.4);
+    animation: eyeGlow 3s ease-in-out infinite;
+  }
+  .eye-left { left: 16px; } .eye-right { right: 16px; }
+  @keyframes eyeGlow {
+    0%,100% { opacity:1; box-shadow:0 0 15px var(--gold),0 0 30px rgba(245,197,66,0.4); }
+    50% { opacity:0.15; box-shadow:0 0 4px var(--gold); }
+  }
+  .subtitle-tag {
+    display: inline-block; background: var(--red); color: white;
+    font-family: 'Fredoka One', cursive; font-size: 0.65rem;
+    letter-spacing: 2.5px; text-transform: uppercase; padding: 3px 14px;
+    border-radius: 20px; margin-bottom: 8px; animation: flicker 5s infinite;
+  }
+  @keyframes flicker {
+    0%,95%,100%{opacity:1}96%{opacity:0.4}97%{opacity:1}98%{opacity:0.2}99%{opacity:1}
+  }
+  h1 {
+    font-family: 'Creepster', cursive; font-size: clamp(2rem, 8vw, 3.2rem);
+    color: var(--gold); line-height: 1; margin-bottom: 4px; letter-spacing: 2px;
+    text-shadow: 2px 2px 0 var(--gold-dark), 0 0 24px rgba(245,197,66,0.5);
+  }
+  .header-sub { font-family: 'Fredoka One', cursive; color: var(--teal); font-size: 0.9rem; letter-spacing: 1px; text-shadow: 0 0 8px var(--teal); }
+
+  .divider { display:flex; align-items:center; gap:10px; margin:16px 0; }
+  .divider-line { flex:1; height:2px; background:linear-gradient(90deg,transparent,var(--gold-dark),transparent); }
+  .divider-icon { font-size:1.2rem; filter:drop-shadow(0 0 5px var(--gold)); }
+
+  /* ===== TABS (mobile nav) ===== */
+  .tab-nav {
+    display: flex; background: rgba(42,10,61,0.9); border: 2px solid var(--gray);
+    border-radius: 14px; padding: 4px; margin-bottom: 18px; gap: 4px;
+    position: sticky; top: calc(var(--sat) + 4px); z-index: 50;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  }
+  .tab-btn {
+    flex: 1; padding: 10px 4px; border: none; border-radius: 10px;
+    font-family: 'Fredoka One', cursive; font-size: 0.7rem; letter-spacing: 0.5px;
+    text-transform: uppercase; cursor: pointer; transition: all 0.2s;
+    background: transparent; color: rgba(240,230,255,0.4);
+  }
+  .tab-btn.active {
+    background: linear-gradient(135deg, var(--purple), #3a1050);
+    color: var(--gold); box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  }
+  .tab-btn .tab-icon { display: block; font-size: 1.1rem; margin-bottom: 2px; }
+
+  /* ===== TAB PANELS ===== */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ===== TRACKER ===== */
+  .tracker-section {
+    background: rgba(42,10,61,0.8); border: 2px solid var(--gold-dark);
+    border-radius: 16px; padding: 18px 16px; margin-bottom: 18px;
+    box-shadow: 0 0 24px rgba(245,197,66,0.08), inset 0 0 16px rgba(0,0,0,0.3);
+  }
+  .tracker-title { font-family:'Fredoka One',cursive; font-size:1.1rem; color:var(--gold); text-align:center; margin-bottom:14px; text-transform:uppercase; letter-spacing:2px; }
+
+  .days-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:10px; }
+  .week-row-label {
+    grid-column: 1/-1; font-family:'Fredoka One',cursive; font-size:0.65rem;
+    color:var(--teal); text-transform:uppercase; letter-spacing:2px;
+    text-align:center; opacity:0.7; padding-bottom:2px;
+  }
+
+  .day-card {
+    background: var(--deep-purple); border: 1.5px solid var(--gray);
+    border-radius: 10px; padding: 8px 4px; text-align: center;
+    transition: border-color 0.2s;
+  }
+  .day-card.has-points { border-color: rgba(245,197,66,0.5); }
+  .day-name { font-family:'Fredoka One',cursive; font-size:0.65rem; color:var(--teal); letter-spacing:1px; margin-bottom:5px; text-transform:uppercase; }
+  .pip-row { display:flex; justify-content:center; gap:3px; flex-wrap:wrap; }
+  .pip {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid var(--gold-dark); background: transparent;
+    transition: all 0.15s; cursor: pointer;
+    /* Bigger tap target on mobile */
+    position: relative;
+  }
+  .pip::after { content:''; position:absolute; inset:-6px; border-radius:50%; }
+  .pip.earned { background:var(--gold); box-shadow:0 0 7px var(--gold),0 0 14px rgba(245,197,66,0.35); border-color:var(--gold); }
+  .day-score { font-size:0.7rem; margin-top:3px; min-height:14px; line-height:1; }
+
+  .week-totals-row { display:flex; gap:8px; margin-bottom:12px; }
+  .week-total-badge {
+    flex:1; background:var(--deep-purple); border:1.5px solid var(--gray);
+    border-radius:10px; padding:7px 12px; display:flex; align-items:center; justify-content:space-between;
+  }
+  .wtl { font-family:'Fredoka One',cursive; font-size:0.72rem; color:var(--teal); text-transform:uppercase; letter-spacing:1px; }
+  .wtn { font-family:'Creepster',cursive; font-size:1.5rem; color:var(--gold); text-shadow:0 0 8px rgba(245,197,66,0.4); }
+
+  .total-display {
+    display:flex; align-items:center; justify-content:center; gap:16px;
+    background:var(--deep-purple); border:2px solid var(--teal-dark);
+    border-radius:12px; padding:12px 16px; box-shadow:0 0 16px rgba(0,184,160,0.12);
+    flex-wrap: wrap;
+  }
+  .total-label { font-family:'Fredoka One',cursive; font-size:0.85rem; color:var(--teal); letter-spacing:1px; text-transform:uppercase; }
+  .total-number { font-family:'Creepster',cursive; font-size:2.8rem; color:var(--gold); text-shadow:0 0 18px rgba(245,197,66,0.6); line-height:1; min-width:54px; text-align:center; }
+  .total-pts { font-family:'Fredoka One',cursive; font-size:0.78rem; color:rgba(240,230,255,0.45); }
+  .reset-btn {
+    background:transparent; border:1.5px solid var(--red); color:var(--red);
+    font-family:'Fredoka One',cursive; font-size:0.72rem; padding:7px 14px;
+    border-radius:20px; cursor:pointer; letter-spacing:1px; text-transform:uppercase; transition:all 0.2s;
+  }
+  .reset-btn:active { background:var(--red); color:white; }
+
+  /* ===== STORE ===== */
+  .store-title { font-family:'Creepster',cursive; font-size:1.7rem; color:var(--teal); text-align:center; text-shadow:0 0 16px rgba(0,184,160,0.5); letter-spacing:3px; margin-bottom:4px; }
+  .store-sub { text-align:center; font-size:0.78rem; color:rgba(240,230,255,0.45); margin-bottom:16px; font-style:italic; }
+  .items-grid { display:grid; grid-template-columns:1fr; gap:12px; margin-bottom:20px; }
+
+  .item-card {
+    background:linear-gradient(135deg,rgba(42,10,61,0.9),rgba(26,5,40,0.95));
+    border:2px solid var(--gray); border-radius:16px; padding:16px;
+    position:relative; overflow:hidden; transition:all 0.25s ease;
+  }
+  .item-card::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at top left,rgba(245,197,66,0.05) 0%,transparent 60%); pointer-events:none; }
+  .item-card.affordable { border-color:var(--gold-dark); box-shadow:0 0 16px rgba(245,197,66,0.1); }
+  .item-card.affordable::after {
+    content:'✓ READY'; position:absolute; top:10px; right:10px;
+    background:var(--teal); color:white; font-family:'Fredoka One',cursive;
+    font-size:0.58rem; letter-spacing:1px; padding:3px 8px; border-radius:10px;
+  }
+  .item-card.locked { opacity:0.65; }
+  .item-row { display:flex; align-items:center; gap:14px; }
+  .item-emoji { font-size:2.2rem; flex-shrink:0; filter:drop-shadow(0 0 6px rgba(245,197,66,0.25)); }
+  .item-info { flex:1; min-width:0; }
+  .item-name { font-family:'Fredoka One',cursive; font-size:0.95rem; color:var(--white); margin-bottom:3px; line-height:1.2; }
+  .item-desc { font-size:0.72rem; color:rgba(240,230,255,0.45); line-height:1.35; }
+  .item-cost-col { text-align:center; flex-shrink:0; }
+  .cost-pts { font-family:'Creepster',cursive; font-size:1.8rem; color:var(--gold); text-shadow:0 0 8px rgba(245,197,66,0.4); line-height:1; }
+  .cost-label { font-size:0.62rem; color:rgba(240,230,255,0.35); text-transform:uppercase; letter-spacing:0.5px; }
+  .item-footer-row { display:flex; align-items:center; justify-content:space-between; border-top:1px solid rgba(74,48,96,0.4); padding-top:10px; margin-top:10px; gap:8px; }
+  .time-badge { background:rgba(0,184,160,0.1); border:1px solid rgba(0,184,160,0.25); border-radius:8px; padding:5px 10px; }
+  .time-days { font-family:'Fredoka One',cursive; font-size:0.82rem; color:var(--teal); }
+  .time-label { font-size:0.6rem; color:rgba(240,230,255,0.35); text-transform:uppercase; letter-spacing:0.5px; display:block; }
+  .redeem-btn { padding:9px 18px; border:none; border-radius:10px; font-family:'Fredoka One',cursive; font-size:0.88rem; letter-spacing:0.5px; cursor:pointer; transition:all 0.15s; text-transform:uppercase; white-space:nowrap; }
+  .redeem-btn.active { background:linear-gradient(135deg,var(--gold),var(--gold-dark)); color:var(--deep-purple); box-shadow:0 3px 12px rgba(245,197,66,0.25); }
+  .redeem-btn.active:active { transform:scale(0.97); }
+  .redeem-btn.inactive { background:rgba(74,48,96,0.35); color:rgba(240,230,255,0.2); cursor:not-allowed; border:1.5px dashed rgba(74,48,96,0.5); font-size:0.75rem; }
+
+  /* ===== HISTORY ===== */
+  .history-section { margin-bottom: 20px; }
+  .history-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:8px; }
+  .history-title { font-family:'Creepster',cursive; font-size:1.5rem; color:var(--gold); letter-spacing:2px; text-shadow:0 0 12px rgba(245,197,66,0.3); }
+
+  .history-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:14px; }
+  .stat-box { background:rgba(42,10,61,0.8); border:1.5px solid var(--gray); border-radius:10px; padding:9px 6px; text-align:center; }
+  .stat-num { font-family:'Creepster',cursive; font-size:1.6rem; color:var(--gold); line-height:1; }
+  .stat-num.teal { color:var(--teal); }
+  .stat-num.green { color:#2ecc71; }
+  .stat-lbl { font-family:'Fredoka One',cursive; font-size:0.56rem; color:rgba(240,230,255,0.35); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px; }
+
+  .filter-tabs { display:flex; gap:6px; flex-wrap:wrap; }
+  .filter-tab {
+    background:transparent; border:1.5px solid var(--gray); color:rgba(240,230,255,0.45);
+    font-family:'Fredoka One',cursive; font-size:0.66rem; padding:5px 10px;
+    border-radius:20px; cursor:pointer; letter-spacing:1px; text-transform:uppercase; transition:all 0.15s;
+  }
+  .filter-tab.active { background:var(--gold-dark); border-color:var(--gold); color:var(--deep-purple); }
+
+  .log-list { display:flex; flex-direction:column; gap:7px; }
+
+  .log-entry {
+    display:flex; align-items:center; gap:10px;
+    background:rgba(42,10,61,0.7); border:1.5px solid var(--gray);
+    border-radius:10px; padding:9px 12px;
+    animation: slideIn 0.25s ease;
+  }
+  @keyframes slideIn { from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)} }
+  .log-entry.type-earn { border-left:3px solid var(--gold); }
+  .log-entry.type-redeem { border-left:3px solid var(--teal); }
+  .log-entry.type-deduct { border-left:3px solid var(--red); }
+  .log-icon { font-size:1.2rem; flex-shrink:0; }
+  .log-body { flex:1; min-width:0; }
+  .log-main { font-family:'Fredoka One',cursive; font-size:0.8rem; color:var(--white); line-height:1.25; }
+  .log-detail { font-size:0.65rem; color:rgba(240,230,255,0.4); margin-top:1px; }
+  .log-meta { text-align:right; flex-shrink:0; }
+  .log-pts { font-family:'Creepster',cursive; font-size:1.2rem; line-height:1; }
+  .log-pts.earn { color:var(--gold); }
+  .log-pts.redeem { color:var(--teal); }
+  .log-pts.deduct { color:#e74c3c; }
+  .log-time { font-size:0.6rem; color:rgba(240,230,255,0.28); margin-top:1px; }
+  .log-empty { text-align:center; padding:30px 16px; font-family:'Fredoka One',cursive; font-size:0.85rem; color:rgba(240,230,255,0.22); letter-spacing:1px; }
+  .log-empty-icon { font-size:2rem; display:block; margin-bottom:8px; opacity:0.25; }
+  .log-week-divider { display:flex; align-items:center; gap:8px; padding:3px 0; }
+  .log-week-divider span { font-family:'Fredoka One',cursive; font-size:0.62rem; color:var(--gray); text-transform:uppercase; letter-spacing:2px; white-space:nowrap; }
+  .log-week-divider::before,.log-week-divider::after { content:''; flex:1; height:1px; background:var(--gray); opacity:0.35; }
+
+  /* ===== MODAL ===== */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(10,0,20,0.88); z-index:200; align-items:center; justify-content:center; padding:20px; }
+  .modal-overlay.show { display:flex; }
+  .modal {
+    background:linear-gradient(135deg,var(--purple),var(--deep-purple));
+    border:3px solid var(--gold-dark); border-radius:22px; padding:32px 28px;
+    max-width:360px; width:100%; text-align:center;
+    box-shadow:0 0 50px rgba(245,197,66,0.25);
+    animation:popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes popIn { from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1} }
+  .modal-emoji { font-size:3.5rem; margin-bottom:10px; display:block; }
+  .modal h2 { font-family:'Creepster',cursive; font-size:1.8rem; color:var(--gold); text-shadow:0 0 16px rgba(245,197,66,0.5); margin-bottom:6px; }
+  .modal p { color:rgba(240,230,255,0.7); font-size:0.9rem; margin-bottom:18px; line-height:1.5; }
+  .modal-item-name { font-family:'Fredoka One',cursive; color:var(--teal); font-size:1rem; }
+  .modal-close { background:linear-gradient(135deg,var(--gold),var(--gold-dark)); color:var(--deep-purple); border:none; border-radius:12px; padding:12px 28px; font-family:'Fredoka One',cursive; font-size:1rem; cursor:pointer; letter-spacing:1px; transition:all 0.15s; }
+  .modal-close:active { transform:scale(0.97); }
+
+  .footer-note { text-align:center; font-size:0.7rem; color:rgba(240,230,255,0.25); padding:16px 0 8px; line-height:1.6; }
+  .footer-note strong { color:var(--gold-dark); }
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<div class="container">
+
+  <!-- iOS install hint (shown only in Safari before install) -->
+  <div class="install-banner" id="installBanner">
+    <span style="font-size:1.6rem">🐻</span>
+    <div class="install-banner-text">
+      <strong>Add to Home Screen!</strong>
+      Tap <strong>Share ↑</strong> then <strong>"Add to Home Screen"</strong> to install as an app — works offline too!
+    </div>
+    <button class="install-banner-close" onclick="dismissInstall()">✕</button>
+  </div>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="eye-left"></div>
+    <div class="eye-right"></div>
+    <div class="subtitle-tag">⭐ Fazbear's Reward Center ⭐</div>
+    <h1>FREDDY'S<br>PRIZE CORNER</h1>
+    <div class="header-sub">Earn points. Stay golden. Don't check the cameras.</div>
+  </div>
+
+  <!-- TAB NAV -->
+  <div class="tab-nav">
+    <button class="tab-btn active" id="navTracker" onclick="showTab('tracker')">
+      <span class="tab-icon">⭐</span>Points
+    </button>
+    <button class="tab-btn" id="navStore" onclick="showTab('store')">
+      <span class="tab-icon">🛒</span>Prizes
+    </button>
+    <button class="tab-btn" id="navHistory" onclick="showTab('history')">
+      <span class="tab-icon">📜</span>History
+    </button>
+  </div>
+
+  <!-- TAB: TRACKER -->
+  <div class="tab-panel active" id="panelTracker">
+    <div class="tracker-section">
+      <div class="tracker-title">🌟 Daily Points Tracker</div>
+      <div class="days-grid" id="daysGrid"></div>
+      <div class="week-totals-row" id="weekTotalsRow"></div>
+      <div class="total-display">
+        <div><div class="total-label">Available</div><div class="total-pts">points to spend</div></div>
+        <div class="total-number" id="totalPoints">0</div>
+        <div><div class="total-label">⭐ Tap pips</div><div class="total-pts">to earn!</div></div>
+        <button class="reset-btn" onclick="confirmReset()">Reset</button>
+      </div>
+    </div>
+    <div class="footer-note">
+      <strong>How it works:</strong> Earn up to 5 points every school day ⭐<br>
+      Tap the glowing circles to track your daily points!<br>
+      <em>Your progress saves automatically on your device.</em>
+    </div>
+  </div>
+
+  <!-- TAB: STORE -->
+  <div class="tab-panel" id="panelStore">
+    <div class="store-title">🛒 Prize Menu</div>
+    <div class="store-sub">"Earning prizes makes everyone happy here at Freddy Fazbear's!"</div>
+    <div class="items-grid" id="itemsGrid"></div>
+  </div>
+
+  <!-- TAB: HISTORY -->
+  <div class="tab-panel" id="panelHistory">
+    <div class="history-section">
+      <div class="history-header">
+        <div class="history-title">📜 Activity Log</div>
+        <div class="filter-tabs">
+          <button class="filter-tab active" id="tab-all" onclick="setFilter('all')">All</button>
+          <button class="filter-tab" id="tab-earn" onclick="setFilter('earn')">⭐ Earned</button>
+          <button class="filter-tab" id="tab-redeem" onclick="setFilter('redeem')">🏆 Redeemed</button>
+        </div>
+      </div>
+      <div class="history-stats">
+        <div class="stat-box"><div class="stat-num" id="stat-total-earned">0</div><div class="stat-lbl">Earned</div></div>
+        <div class="stat-box"><div class="stat-num teal" id="stat-total-spent">0</div><div class="stat-lbl">Spent</div></div>
+        <div class="stat-box"><div class="stat-num green" id="stat-prizes">0</div><div class="stat-lbl">Prizes</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-streak">0</div><div class="stat-lbl">Best Day</div></div>
+      </div>
+      <div class="log-list" id="logList"></div>
+    </div>
+  </div>
+
+</div><!-- end container -->
+
+<!-- REDEEM MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <span class="modal-emoji">🎉</span>
+    <h2>PRIZE UNLOCKED!</h2>
+    <p>You redeemed:<br><span class="modal-item-name" id="modalItemName"></span></p>
+    <p style="font-size:0.78rem;color:rgba(240,230,255,0.45);">Show this screen to claim your reward!</p>
+    <button class="modal-close" onclick="closeModal()">AWESOME! 🎸</button>
+  </div>
+</div>
+
+<script>
+// ===== ITEMS =====
+const ITEMS = [
+  { id:1, emoji:"🖊️", name:"Elmer's Glue Stick",      desc:"One classic Elmer's glue stick — perfect for crafts & school projects!", points:8,  days:"~2 days" },
+  { id:2, emoji:"📦", name:"Scotch Tape Roll",          desc:"One roll of single-sided Scotch tape. Stick it to whatever you want!",    points:12, days:"~2.5 days" },
+  { id:3, emoji:"📓", name:"Graph Paper (5 Sheets)",    desc:"Five sheets of grid-lined graph paper — great for math, art & blueprints!", points:2, days:"Same day" },
+  { id:4, emoji:"📫", name:"Packing Tape Roll",         desc:"One heavy-duty Scotch packing tape roll. For serious builders only!",      points:16, days:"~3 days" },
+  { id:5, emoji:"🔫", name:"Glue Gun Sticks (2 Sticks)",desc:"Two replacement glue gun sticks — get crafting on your next big project!", points:3, days:"Same day" }
+];
+
+const TOTAL_DAYS = 10;
+const DAY_NAMES = ['Mon','Tue','Wed','Thu','Fri'];
+const STORAGE_KEY = 'fnaf_pwa_state_v1';
+
+// ===== STATE (persisted via localStorage) =====
+let state = loadState();
+
+function defaultState() {
+  return {
+    pips: Array(TOTAL_DAYS).fill(0).map(() => Array(5).fill(false)),
+    history: []
+  };
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultState();
+    const parsed = JSON.parse(raw);
+    // Restore Date objects in history
+    parsed.history = parsed.history.map(e => ({ ...e, ts: new Date(e.ts) }));
+    return parsed;
+  } catch { return defaultState(); }
+}
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+}
+
+// ===== HELPERS =====
+function getAvailable() { return state.pips.flat().filter(Boolean).length; }
+function getDayEarned(d) { return state.pips[d].filter(Boolean).length; }
+
+// ===== TAB NAV =====
+function showTab(tab) {
+  ['tracker','store','history'].forEach(t => {
+    document.getElementById(`panel${t.charAt(0).toUpperCase()+t.slice(1)}`).classList.toggle('active', t===tab);
+    document.getElementById(`nav${t.charAt(0).toUpperCase()+t.slice(1)}`).classList.toggle('active', t===tab);
+  });
+  if (tab === 'history') renderHistory();
+  if (tab === 'store') renderStore();
+}
+
+// ===== RENDER TRACKER =====
+function renderDays() {
+  const grid = document.getElementById('daysGrid');
+  grid.innerHTML = '';
+  for (let d = 0; d < TOTAL_DAYS; d++) {
+    const weekNum = Math.floor(d / 5);
+    const dayIdx = d % 5;
+    if (dayIdx === 0) {
+      const wl = document.createElement('div');
+      wl.className = 'week-row-label';
+      wl.textContent = `— Week ${weekNum+1} —`;
+      grid.appendChild(wl);
+    }
+    const earned = getDayEarned(d);
+    const card = document.createElement('div');
+    card.className = 'day-card' + (earned > 0 ? ' has-points' : '');
+    card.innerHTML = `<div class="day-name">${DAY_NAMES[dayIdx]}</div><div class="pip-row" id="pips-${d}"></div><div class="day-score">${'⭐'.repeat(earned)}</div>`;
+    grid.appendChild(card);
+    const row = card.querySelector(`#pips-${d}`);
+    for (let p = 0; p < 5; p++) {
+      const pip = document.createElement('div');
+      pip.className = 'pip' + (state.pips[d][p] ? ' earned' : '');
+      pip.addEventListener('click', () => togglePip(d, p));
+      row.appendChild(pip);
+    }
+  }
+  // Week totals
+  const wtr = document.getElementById('weekTotalsRow');
+  wtr.innerHTML = '';
+  for (let w = 0; w < 2; w++) {
+    const wpts = Array.from({length:5},(_,i)=>getDayEarned(w*5+i)).reduce((a,b)=>a+b,0);
+    const b = document.createElement('div');
+    b.className = 'week-total-badge';
+    b.innerHTML = `<span class="wtl">Week ${w+1}</span><span class="wtn">${wpts}<span style="font-size:0.8rem;color:rgba(240,230,255,0.35)"> pts</span></span>`;
+    wtr.appendChild(b);
+  }
+  document.getElementById('totalPoints').textContent = getAvailable();
+}
+
+function togglePip(day, pipIdx) {
+  const wasEarned = state.pips[day][pipIdx];
+  state.pips[day][pipIdx] = !wasEarned;
+  addEntry({
+    type: wasEarned ? 'deduct' : 'earn',
+    label: wasEarned
+      ? `Point removed — ${DAY_NAMES[day%5]}, Week ${Math.floor(day/5)+1}`
+      : `Earned a point — ${DAY_NAMES[day%5]}, Week ${Math.floor(day/5)+1}`,
+    detail: `Day total: ${getDayEarned(day)}/5 pts`,
+    pts: wasEarned ? -1 : 1,
+    day
+  });
+  saveState();
+  renderDays();
+  renderStore();
+}
+
+// ===== HISTORY =====
+function addEntry(e) {
+  state.history.push({ id: Date.now()+Math.random(), ...e, balance: getAvailable(), ts: new Date() });
+}
+
+let currentFilter = 'all';
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-tab').forEach(t => t.className='filter-tab');
+  document.getElementById(`tab-${f}`).className = 'filter-tab active';
+  renderHistory();
+}
+
+function formatTime(date) {
+  const now = new Date(), diff = now - date;
+  if (diff < 60000) return 'just now';
+  if (diff < 3600000) return `${Math.floor(diff/60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff/3600000)}h ago`;
+  return date.toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+function renderHistory() {
+  const h = state.history;
+  const totalEarned = h.filter(e=>e.type==='earn').length;
+  const totalSpent = h.filter(e=>e.type==='redeem').reduce((a,e)=>a+Math.abs(e.pts),0);
+  const prizes = h.filter(e=>e.type==='redeem').length;
+  const dayMap = {};
+  h.filter(e=>e.type==='earn').forEach(e=>{ if(e.day!=null) dayMap[e.day]=(dayMap[e.day]||0)+1; });
+  const best = Math.max(0,...Object.values(dayMap));
+
+  document.getElementById('stat-total-earned').textContent = totalEarned;
+  document.getElementById('stat-total-spent').textContent = totalSpent;
+  document.getElementById('stat-prizes').textContent = prizes;
+  document.getElementById('stat-streak').textContent = best > 0 ? `${best}⭐` : '0';
+
+  const filtered = currentFilter==='all' ? h : h.filter(e=>e.type===currentFilter);
+  const list = document.getElementById('logList');
+
+  if (!filtered.length) {
+    list.innerHTML = `<div class="log-empty"><span class="log-empty-icon">👁</span>${
+      currentFilter==='all' ? 'No activity yet... Freddy is waiting.' :
+      currentFilter==='earn' ? 'No points earned yet. Get to work!' : 'No prizes redeemed yet. Keep earning!'
+    }</div>`;
+    return;
+  }
+
+  list.innerHTML = '';
+  let lastWeek = null;
+  [...filtered].reverse().forEach(e => {
+    const ew = e.day!=null ? Math.floor(e.day/5)+1 : null;
+    if (ew && ew!==lastWeek && currentFilter!=='redeem') {
+      const d = document.createElement('div');
+      d.className='log-week-divider';
+      d.innerHTML=`<span>Week ${ew}</span>`;
+      list.appendChild(d);
+      lastWeek=ew;
+    }
+    const el = document.createElement('div');
+    el.className=`log-entry type-${e.type}`;
+    const icon = e.type==='earn'?'⭐':e.type==='redeem'?'🏆':'↩️';
+    const pts = e.type==='earn'?`+${Math.abs(e.pts)}`:`-${Math.abs(e.pts)}`;
+    const cls = e.type==='earn'?'earn':e.type==='redeem'?'redeem':'deduct';
+    el.innerHTML=`
+      <span class="log-icon">${icon}</span>
+      <div class="log-body">
+        <div class="log-main">${e.label}</div>
+        <div class="log-detail">${e.detail} · Balance: ${e.balance} pts</div>
+      </div>
+      <div class="log-meta">
+        <div class="log-pts ${cls}">${pts}</div>
+        <div class="log-time">${formatTime(e.ts)}</div>
+      </div>`;
+    list.appendChild(el);
+  });
+}
+
+// ===== STORE =====
+function renderStore() {
+  const total = getAvailable();
+  const grid = document.getElementById('itemsGrid');
+  grid.innerHTML = '';
+  ITEMS.forEach(item => {
+    const can = total >= item.points;
+    const card = document.createElement('div');
+    card.className=`item-card ${can?'affordable':'locked'}`;
+    card.innerHTML=`
+      <div class="item-row">
+        <span class="item-emoji">${item.emoji}</span>
+        <div class="item-info">
+          <div class="item-name">${item.name}</div>
+          <div class="item-desc">${item.desc}</div>
+        </div>
+        <div class="item-cost-col">
+          <div class="cost-pts">${item.points}</div>
+          <div class="cost-label">⭐ pts</div>
+        </div>
+      </div>
+      <div class="item-footer-row">
+        <div class="time-badge">
+          <div class="time-days">${item.days}</div>
+          <span class="time-label">to earn</span>
+        </div>
+        <button class="redeem-btn ${can?'active':'inactive'}" ${can?`onclick="redeem(${item.id})"`:' disabled'}>
+          ${can?'🏆 Redeem!':'🔒 Need '+(item.points-total)+' more'}
+        </button>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+// ===== REDEEM =====
+function redeem(itemId) {
+  const item = ITEMS.find(i=>i.id===itemId);
+  if (!item || getAvailable()<item.points) return;
+  let left = item.points;
+  outer: for (let d=TOTAL_DAYS-1;d>=0;d--) for (let p=4;p>=0;p--) {
+    if (state.pips[d][p] && left>0) { state.pips[d][p]=false; left--; if(!left) break outer; }
+  }
+  addEntry({ type:'redeem', label:`Redeemed: ${item.name}`, detail:`${item.points} pts spent · ${item.emoji}`, pts:-item.points, day:undefined });
+  saveState();
+  document.getElementById('modalItemName').textContent = item.name;
+  document.getElementById('modalOverlay').classList.add('show');
+  renderDays(); renderStore();
+}
+
+function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+
+// ===== RESET =====
+function confirmReset() {
+  if (confirm('Reset ALL points and history?\nFreddy will be watching... 👀')) {
+    state = defaultState();
+    currentFilter = 'all';
+    saveState();
+    document.querySelectorAll('.filter-tab').forEach(t=>t.className='filter-tab');
+    document.getElementById('tab-all').className='filter-tab active';
+    renderDays(); renderStore(); renderHistory();
+  }
+}
+
+// ===== iOS INSTALL BANNER =====
+function showInstallHint() {
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true;
+  const dismissed = localStorage.getItem('fnaf_install_dismissed');
+  if (isIOS && !isStandalone && !dismissed) {
+    document.getElementById('installBanner').classList.add('show');
+  }
+}
+function dismissInstall() {
+  document.getElementById('installBanner').classList.remove('show');
+  localStorage.setItem('fnaf_install_dismissed','1');
+}
+
+// ===== SERVICE WORKER =====
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
+// ===== INIT =====
+renderDays();
+renderStore();
+renderHistory();
+showInstallHint();
+</script>
+</body>
+</html>
